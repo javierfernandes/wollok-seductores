@@ -1,0 +1,175 @@
+import seductores.Seducible
+import seductores.Seductor
+import seductores.generoMasculino
+import seductores.generoFemenino
+import seductores.Billetera
+import seductores.titulo
+import seductores.millonarios
+import seductores.Reputacion
+import seductores.cazafortunas
+import seductores.militante
+import seductores.envidioso
+import seductores.libre
+
+test "Un seducible nunca aceptará una cita si ya tiene pareja" {
+	const juliaCasada = new Seducible()
+	juliaCasada.setPareja(new Object())
+	assert.notThat(juliaCasada.aceptaCitaDe(new Seductor()))
+}
+
+test "Un seducible aceptará una cita si ya tiene pareja y el seductor es su pareja actual)" {
+	const juliaCasada = new Seducible()
+	const andresSoltero = new Seductor()
+	juliaCasada.setPareja(andresSoltero)
+	assert.that(juliaCasada.aceptaCitaDe(andresSoltero))
+}
+
+test "Tampoco aceptará una cita de un seductor que no sea de un género de su preferencia" {
+	const juliaSoltera = new Seducible()
+	juliaSoltera.agregarGeneroPreferido(generoMasculino)
+	
+	const andres = new Seductor()
+	andres.setGenero(generoMasculino)
+	assert.that(juliaSoltera.aceptaCitaDe(andres))
+	
+	const andrea = new Seductor()
+	andrea.setGenero(generoFemenino)
+	assert.notThat(juliaSoltera.aceptaCitaDe(andrea))
+}
+
+// *****************
+// ** personalidades
+// *****************
+
+// cazafortunas
+test "cazafortunas acepta cita de un millonario" {
+	const cazafortuna = new Seducible()
+	cazafortuna.setPersonalidad(cazafortunas)
+	
+	const millonario = new Seductor(millonarios.getNivelMinimo() + 1, 0, 0)
+	assert.that(cazafortuna.aceptaCitaDe(millonario))
+}
+
+test "cazafortunas NO acepta cita de un NO millonario" {
+	const cazafortuna = new Seducible()
+	cazafortuna.setPersonalidad(cazafortunas)
+	
+	const millonario = new Seductor(millonarios.getNivelMinimo() - 1, 0, 0)
+	assert.notThat(cazafortuna.aceptaCitaDe(millonario))
+}
+
+// militante
+test "militante no acepta un nivel intelectual inferior a N" {
+	const aMilitante = new Seducible()
+	aMilitante.setPersonalidad(militante)
+	aMilitante.setNivelIntelectualMinimoBuscado(10)
+	
+	const nivelInferior = new Seductor(0, 9, 0)
+	assert.notThat(aMilitante.aceptaCitaDe(nivelInferior))
+}
+test "militante acepta un nivel intelectual > N si es millonario" {
+	const aMilitante = new Seducible()
+	aMilitante.setPersonalidad(militante)
+	aMilitante.setNivelIntelectualMinimoBuscado(10)
+		
+	const nivelSuperiorYMillonario = new Seductor(millonarios.getNivelMinimo() + 1, 10, 0)
+	assert.that(aMilitante.aceptaCitaDe(nivelSuperiorYMillonario))
+}
+test "militante acepta un nivel intelectual > N si NO es millonario pero su aspecto personal supera 1/2 su intelectual" {
+	const aMilitante = new Seducible()
+	aMilitante.setPersonalidad(militante)
+	aMilitante.setNivelIntelectualMinimoBuscado(10)
+		
+	const nivelSuperiorYPersonalMayorAMitadDeIntelectual = new Seductor(millonarios.getNivelMinimo() - 1, 10, 6)
+	assert.that(aMilitante.aceptaCitaDe(nivelSuperiorYPersonalMayorAMitadDeIntelectual))
+	
+	const nivelSuperiorYPersonalMenorAMitadDeIntelectual = new Seductor(millonarios.getNivelMinimo() - 1, 10, 4)
+	assert.notThat(aMilitante.aceptaCitaDe(nivelSuperiorYPersonalMenorAMitadDeIntelectual))
+}
+
+// envidioso
+test "envidioso acepta si su rival acepta" {
+	const rivalAceptaTodo = object inherits Seducible {
+		override method aceptaCitaDe(seductor) = true
+	}
+	const unEnvidioso = new Seducible()
+	unEnvidioso.setRival(rivalAceptaTodo)
+	
+	assert.that(unEnvidioso.aceptaCitaDe(new Seductor()))
+}
+test "envidioso NO acepta si su rival NO acepta" {
+	const unEnvidioso = new Seducible()
+	unEnvidioso.setPersonalidad(envidioso)
+	
+	const rivalNoAceptaNada = object inherits Seducible {
+		override method aceptaCitaDe(seductor) = false
+	}
+	unEnvidioso.setRival(rivalNoAceptaNada)
+	
+	assert.notThat(unEnvidioso.aceptaCitaDe(new Seductor()))
+}
+
+// libre
+test "libre no exige nada extra" {
+	const unEnvidioso = new Seducible()
+	unEnvidioso.setPersonalidad(libre)
+	
+	assert.that(unEnvidioso.aceptaCitaDe(new Seductor()))
+}
+
+// *****************
+// ** artilugios
+// *****************
+
+// titulo
+test "titulo universitario no afecta nivel personal" {
+	assert.equals(0, titulo.modificarAspectoPersonal(null, null))
+}
+test "titulo universitario incrementa 80% el nivel economico" {
+	assert.equals(80, titulo.modificarNivelEconomico(null, 100))
+}
+test "titulo universitario incrementa 100% el nivel intelectual" {
+	assert.equals(100, titulo.modificarNivelIntelectual(null, 100))
+}
+
+// billetera
+test "billetera aumenta en 10% el aspecto personal" {
+	const billetera = new Billetera(20)
+	assert.equals(10, billetera.modificarAspectoPersonal(null, 100))
+}
+test "billetera aumenta el nivel económico en la cantidad de pesos que contiene la billetera" {
+	const billetera = new Billetera(20)
+	assert.equals(20, billetera.modificarNivelEconomico(null, 100))
+}
+test "billetera reduce su nivel intelectual en 20% si el seductor es millonario" {
+	const billetera = new Billetera(20)
+	const seductorMillonario = new Seductor(millonarios.getNivelMinimo() + 1, 0, 0)
+	assert.equals(-20, billetera.modificarNivelIntelectual(seductorMillonario, 100))
+}
+test "billetera no afecta el nivel intelectual si el seductor NO es millonario" {
+	const billetera = new Billetera(20)
+	const seductorNoMillonario = new Seductor(millonarios.getNivelMinimo() - 1, 0, 0)
+	assert.equals(0, billetera.modificarNivelIntelectual(seductorNoMillonario, 100))
+}
+
+// reputacion
+test "reputacion incrementa aspecto personal en N" {
+	assert.equals(30, new Reputacion(0, 0, 30).modificarAspectoPersonal(null, null))
+}
+test "reputacion incrementa nivel economico en N" {
+	assert.equals(30, new Reputacion(0, 30, 0).modificarNivelEconomico(null, null))
+}
+test "reputacion incrementa nivel intelectual en N" {
+	assert.equals(-30, new Reputacion(-30, 0, 0).modificarNivelIntelectual(null, null))
+}
+
+// seductores c/artilugios
+
+test "Seductor con billetera y titulo de programador" {
+	const s = new Seductor(100, 0, 0)
+	s.artilugio(new Billetera(10))
+	s.artilugio(titulo)
+	assert.equals(190, s.getNivelEconomico())
+}
+
+// estrella	
